@@ -10,7 +10,7 @@ import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 
 // ── Change this to your real launch date ────────────────────────────────────
-const LAUNCH_DATE = new Date("2026-01-01T00:00:00Z");
+const LAUNCH_DATE = new Date("2026-04-08T00:00:00Z");
 // ────────────────────────────────────────────────────────────────────────────
 
 const COOKIE_NAME = "tsuki_unlocked";
