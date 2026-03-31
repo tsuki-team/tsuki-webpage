@@ -1,288 +1,508 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const RACERS = [
-  { label: "tsuki",       ms: 11,   pct: 0.26,  highlight: true  },
-  { label: "tinygo",      ms: 340,  pct: 8.1,   highlight: false },
-  { label: "PlatformIO",  ms: 1800, pct: 42.8,  highlight: false },
-  { label: "Arduino IDE", ms: 4200, pct: 100,   highlight: false },
-];
+/* ── Animated counter ─────────────────────────────────────────────────────── */
+function Counter({
+  target,
+  duration = 1400,
+  decimals = 0,
+  suffix = "",
+}: {
+  target: number;
+  duration?: number;
+  decimals?: number;
+  suffix?: string;
+}) {
+  const [val, setVal] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
 
-function useInView(threshold = 0.3) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } },
-      { threshold }
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          const tick = (now: number) => {
+            const p = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - p, 3);
+            setVal(parseFloat((ease * target).toFixed(decimals)));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.3 }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-}
-
-/* ── Race bars — CSS transitions only, no rAF ──────────────────────────── */
-function RaceSection() {
-  const { ref, inView } = useInView(0.2);
+  }, [target, duration, decimals]);
 
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <span style={{
-        fontFamily: "var(--font-mono)", fontSize: 10,
-        letterSpacing: "0.08em", textTransform: "uppercase",
-        color: "var(--fg-faint)", marginBottom: 8, display: "block",
-      }}>
-        Transpile time — comparative
-      </span>
+    <span ref={ref}>
+      {decimals > 0 ? val.toFixed(decimals) : Math.floor(val)}
+      {suffix}
+    </span>
+  );
+}
 
-      {RACERS.map((r, i) => {
-        const displayMs = r.ms >= 1000 ? `${(r.ms / 1000).toFixed(1)}s` : `${r.ms}ms`;
-        // Delay each bar slightly for stagger
-        const delay = inView ? `${i * 0.12}s` : "0s";
-        return (
-          <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.03em",
-              color: r.highlight ? "var(--fg)" : "var(--fg-faint)",
-              fontWeight: r.highlight ? 500 : 400,
-              width: 90, flexShrink: 0,
-            }}>
-              {r.label}
-            </span>
+/* ── Terminal line animation ──────────────────────────────────────────────── */
+const BUILD_STEPS = [
+  { delay: 0,    color: "var(--fg-faint)",  text: "$ tsuki build --board uno --lang go" },
+  { delay: 320,  color: "var(--fg-muted)",  text: "  → Parsing source files..." },
+  { delay: 640,  color: "var(--fg-muted)",  text: "  → Resolving imports (ws2812, servo)" },
+  { delay: 960,  color: "var(--fg-muted)",  text: "  → Transpiling Go → C++" },
+  { delay: 1200, color: "var(--ok)",        text: "  ✓ Transpile complete          11ms" },
+  { delay: 1520, color: "var(--fg-muted)",  text: "  → Compiling with avr-gcc..." },
+  { delay: 2600, color: "var(--ok)",        text: "  ✓ Compilation complete        ~1.0s" },
+  { delay: 2900, color: "var(--fg-muted)",  text: "  → Binary size: 7.2 KB / 32 KB" },
+  { delay: 3200, color: "var(--ok)",        text: "  ✓ Ready to flash" },
+];
 
-            <div style={{
-              flex: 1, height: 5,
-              background: "var(--surface-3)", borderRadius: 100,
-              overflow: "hidden",
-              // contain prevents the bar from affecting surrounding layout
-              contain: "layout style",
-            }}>
-              <div style={{
-                height: "100%",
-                borderRadius: 100,
-                background: r.highlight
-                  ? "var(--fg)"
-                  : "var(--surface-4)",
-                width: inView ? `${r.pct}%` : "0%",
-                transition: inView
-                  ? `width ${0.3 + (r.pct / 100) * 1.8}s cubic-bezier(0.25,1,0.5,1) ${delay}`
-                  : "none",
-                // tsuki bar gets a faint right-edge glow
-                boxShadow: r.highlight ? "2px 0 8px rgba(237,237,237,0.3)" : "none",
-              }} />
-            </div>
+function Terminal() {
+  const [visible, setVisible] = useState<number[]>([]);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-            <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 10,
-              color: r.highlight ? "var(--fg-muted)" : "var(--fg-faint)",
-              width: 44, textAlign: "right", flexShrink: 0,
-              opacity: inView ? 1 : 0,
-              transition: `opacity 0.3s ${delay}`,
-            }}>
-              {displayMs}
-            </span>
-          </div>
-        );
-      })}
+  const restart = () => {
+    setVisible([]);
+    setTimeout(() => {
+      BUILD_STEPS.forEach((s, i) => {
+        setTimeout(() => setVisible(v => [...v, i]), s.delay);
+      });
+    }, 80);
+  };
 
-      {/* Axis */}
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started) {
+          setStarted(true);
+          restart();
+        }
+      },
+      { threshold: 0.4 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [started]);
+
+  return (
+    <div ref={ref} style={{
+      background: "var(--surface-1)",
+      border: "1px solid var(--border)",
+      borderRadius: 8,
+      overflow: "hidden",
+      fontFamily: "var(--font-mono)",
+    }}>
       <div style={{
-        display: "flex", justifyContent: "space-between",
-        paddingLeft: 104, marginTop: -4,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 14px",
+        borderBottom: "1px solid var(--border)",
+        background: "var(--surface-2)",
       }}>
-        {["0", "1s", "2s", "3s", "4.2s"].map(t => (
-          <span key={t} style={{
-            fontFamily: "var(--font-mono)", fontSize: 9,
-            color: "var(--fg-faint)", letterSpacing: "0.05em",
-          }}>{t}</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          {["#ff5f57","#ffbd2e","#28c840"].map((c, i) => (
+            <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.7 }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: "0.05em" }}>
+          tsuki — build
+        </span>
+        <button
+          onClick={restart}
+          style={{
+            background: "transparent", border: "none", cursor: "pointer",
+            color: "var(--fg-faint)", fontSize: 10, letterSpacing: "0.05em",
+            fontFamily: "var(--font-mono)", padding: "2px 6px",
+            borderRadius: 4, transition: "color 0.15s",
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--fg-muted)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--fg-faint)"}
+        >
+          ↺ replay
+        </button>
+      </div>
+
+      <div style={{ padding: "16px 18px", minHeight: 200, display: "flex", flexDirection: "column", gap: 5 }}>
+        {BUILD_STEPS.map((s, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: 12, lineHeight: 1.6,
+              color: s.color,
+              opacity: visible.includes(i) ? 1 : 0,
+              transform: visible.includes(i) ? "translateY(0)" : "translateY(4px)",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              display: "flex", justifyContent: "space-between",
+              letterSpacing: i === 0 ? "0.01em" : undefined,
+              fontWeight: s.color === "var(--ok)" ? 500 : undefined,
+            }}
+          >
+            <span>{s.text}</span>
+          </div>
         ))}
+        <span style={{
+          display: "inline-block", width: 7, height: 13, marginTop: 4,
+          background: "var(--fg-faint)",
+          opacity: visible.length === BUILD_STEPS.length ? 0 : 0.6,
+          animation: "blink-cursor 1s step-end infinite",
+        }} />
       </div>
     </div>
   );
 }
 
-/* ── Big "11ms" — CSS animation only, zero JS after mount ──────────────── */
-function HeroMetric() {
-  const { ref, inView } = useInView(0.2);
+/* ── Stat card ────────────────────────────────────────────────────────────── */
+function StatCard({
+  label,
+  value,
+  unit,
+  sub,
+  accent = false,
+  animated,
+  animTarget,
+  animSuffix,
+  animDecimals,
+}: {
+  label: string;
+  value?: string;
+  unit?: string;
+  sub: string;
+  accent?: boolean;
+  animated?: boolean;
+  animTarget?: number;
+  animSuffix?: string;
+  animDecimals?: number;
+}) {
+  return (
+    <div style={{
+      background: "var(--surface-1)",
+      border: `1px solid ${accent ? "rgba(255,255,255,0.12)" : "var(--border)"}`,
+      borderRadius: 8,
+      padding: "22px 24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
+      flex: 1,
+      minWidth: 140,
+    }}>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: 10,
+        letterSpacing: "0.08em", textTransform: "uppercase",
+        color: "var(--fg-faint)",
+      }}>
+        {label}
+      </span>
+      <div style={{
+        fontFamily: "var(--font-sans)",
+        fontSize: 36,
+        fontWeight: 600,
+        letterSpacing: "-0.04em",
+        color: "var(--fg)",
+        lineHeight: 1,
+      }}>
+        {animated && animTarget !== undefined ? (
+          <Counter target={animTarget} suffix={animSuffix ?? ""} decimals={animDecimals} duration={1200} />
+        ) : (
+          <>{value}<span style={{ fontSize: 18, fontWeight: 400, color: "var(--fg-muted)", marginLeft: 3 }}>{unit}</span></>
+        )}
+      </div>
+      <span style={{
+        fontFamily: "var(--font-sans)", fontSize: 12,
+        color: "var(--fg-muted)", lineHeight: 1.5,
+      }}>
+        {sub}
+      </span>
+    </div>
+  );
+}
+
+/* ── Bar chart comparing memory usage ──────────────────────────────────────── */
+function MemBar({ label, pct, value, highlight }: { label: string; pct: number; value: string; highlight?: boolean }) {
+  const [filled, setFilled] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setTimeout(() => setFilled(true), 100); } },
+      { threshold: 0.5 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      {/* The number — CSS opacity/transform animation, no rAF */}
+    <div ref={ref} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: 10,
+        color: highlight ? "var(--fg)" : "var(--fg-faint)",
+        width: 88, flexShrink: 0, letterSpacing: "0.03em",
+      }}>
+        {label}
+      </span>
       <div style={{
-        display: "flex", alignItems: "flex-start", gap: "0.06em",
-        opacity: inView ? 1 : 0,
-        transform: inView ? "translateY(0)" : "translateY(16px)",
-        transition: "opacity 0.5s ease, transform 0.5s ease",
+        flex: 1, height: 5, background: "var(--surface-3)", borderRadius: 100,
+        overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%",
+          width: filled ? `${pct}%` : "0%",
+          background: highlight ? "var(--fg)" : "var(--surface-4)",
+          borderRadius: 100,
+          transition: "width 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+        }} />
+      </div>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: 10,
+        color: highlight ? "var(--fg-muted)" : "var(--fg-faint)",
+        width: 52, textAlign: "right", flexShrink: 0,
+      }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/* ── Big timer with rAF scramble ──────────────────────────────────────────── */
+function BigTimer({ triggered }: { triggered: boolean }) {
+  const [display, setDisplay] = useState(999);
+
+  useEffect(() => {
+    if (!triggered) return;
+    const total = 900;
+    const start = performance.now();
+    const raf = (now: number) => {
+      const p = Math.min((now - start) / total, 1);
+      const ease = 1 - Math.pow(1 - p, 4);
+      const val = Math.round(999 - ease * (999 - 11));
+      setDisplay(val);
+      if (p < 1) requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf);
+  }, [triggered]);
+
+  return (
+    <div style={{ position: "relative", userSelect: "none" }}>
+      <div style={{
+        fontFamily: "var(--font-sans)",
+        fontSize: "clamp(120px, 18vw, 220px)",
+        fontWeight: 600,
+        letterSpacing: "-0.06em",
+        lineHeight: 1,
+        color: "var(--fg)",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "0.04em",
       }}>
         <span style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "clamp(100px, 16vw, 200px)",
-          fontWeight: 600,
-          letterSpacing: "-0.06em",
-          lineHeight: 1,
-          color: "var(--fg)",
+          textShadow: triggered ? "0 0 80px rgba(237,237,237,0.08)" : "none",
+          transition: "text-shadow 1s ease",
         }}>
-          11
+          {display}
         </span>
         <span style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "clamp(24px, 3.5vw, 48px)",
+          fontSize: "clamp(28px, 4vw, 52px)",
           fontWeight: 400,
           letterSpacing: "-0.02em",
           color: "var(--fg-muted)",
-          marginTop: "0.2em",
+          marginTop: "0.18em",
         }}>
           ms
         </span>
       </div>
-
       <div style={{
-        fontFamily: "var(--font-mono)", fontSize: 11,
-        letterSpacing: "0.08em", textTransform: "uppercase",
-        color: "var(--fg-faint)", marginTop: 12,
-        opacity: inView ? 1 : 0,
-        transition: "opacity 0.5s 0.2s ease",
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: "var(--fg-faint)",
+        marginTop: 8,
       }}>
-        Go → C++ transpile · 400-line project
+        Go → C++ transpile · 400 line project
       </div>
-
-      {/* Thin ruled line — decorative anchor for the number */}
-      <div style={{
-        position: "absolute",
-        bottom: -20, left: 0,
-        height: 1,
-        background: "linear-gradient(to right, var(--border), transparent)",
-        width: inView ? "100%" : "0%",
-        transition: "width 0.7s 0.1s ease",
-      }} />
     </div>
   );
 }
 
-/* ── Resource chips ─────────────────────────────────────────────────────── */
-function Chips() {
-  const chips = [
-    { value: "~20 MB", label: "disk footprint" },
-    { value: "<12 MB", label: "peak RAM"       },
-    { value: "~1 s",   label: "full compile"   },
-    { value: "0",      label: "daemons"        },
-  ];
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 32 }}>
-      {chips.map(c => (
-        <div key={c.label} style={{
-          padding: "8px 14px",
-          background: "var(--surface-1)",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          display: "flex", flexDirection: "column", gap: 3,
-        }}>
-          <span style={{
-            fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 600,
-            letterSpacing: "-0.03em", color: "var(--fg)", lineHeight: 1,
-          }}>{c.value}</span>
-          <span style={{
-            fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.07em",
-            textTransform: "uppercase", color: "var(--fg-faint)",
-          }}>{c.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ── Qualitative list ───────────────────────────────────────────────────── */
-const POINTS = [
-  { n: "01", title: "Single static binary",    body: "No runtime, no interpreter, no package manager bootstrapping. One file, fully self-contained." },
-  { n: "02", title: "No background processes", body: "tsuki exits when it finishes. It never lingers in memory between builds." },
-  { n: "03", title: "Cold-start is full-speed", body: "No JVM spin-up, no daemon to wait for. First build = every build." },
-  { n: "04", title: "Zero network at build time", body: "Packages are cached locally. tsuki never phones home during compilation." },
-];
-
-/* ── Main ─────────────────────────────────────────────────────────────────── */
+/* ── Main component ───────────────────────────────────────────────────────── */
 export default function Performance() {
-  return (
-    <section id="performance" style={{ background: "var(--surface)" }}>
+  const [triggered, setTriggered] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-      {/* ── Top: giant number ──────────────────────────────────────── */}
-      <div style={{
-        borderBottom: "1px solid var(--border-subtle)",
-        padding: "80px 0 72px",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        {/* CSS-only grid backdrop — zero JS */}
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setTriggered(true); obs.disconnect(); } },
+      { threshold: 0.25 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section id="performance" style={{ background: "var(--surface)", overflow: "hidden" }}>
+
+      {/* ── Hero metric: the giant number ─────────────────────────── */}
+      <div
+        ref={ref}
+        style={{
+          borderBottom: "1px solid var(--border-subtle)",
+          padding: "80px 0 64px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: [
-            "linear-gradient(var(--border-subtle) 1px, transparent 1px)",
-            "linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)",
-          ].join(","),
-          backgroundSize: "64px 64px",
-          opacity: 0.5,
-          WebkitMaskImage: "radial-gradient(ellipse 70% 100% at 50% 50%, black 20%, transparent 100%)",
-          maskImage: "radial-gradient(ellipse 70% 100% at 50% 50%, black 20%, transparent 100%)",
+          backgroundImage: `
+            linear-gradient(var(--border-subtle) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)
+          `,
+          backgroundSize: "60px 60px",
+          opacity: 0.4,
+          maskImage: "radial-gradient(ellipse 80% 100% at 50% 50%, black 30%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 100% at 50% 50%, black 30%, transparent 100%)",
         }} />
 
         <div className="container" style={{ position: "relative" }}>
-          <div className="t-label" style={{ marginBottom: 48 }}>Performance</div>
+          <div className="t-label" style={{ marginBottom: 40 }}>Performance</div>
 
           <div style={{
-            display: "flex", alignItems: "flex-end",
+            display: "flex",
+            alignItems: "flex-end",
             justifyContent: "space-between",
-            gap: 48, flexWrap: "wrap",
+            gap: 40,
+            flexWrap: "wrap",
           }}>
-            <HeroMetric />
-            <div style={{ maxWidth: 340, paddingBottom: "0.4em" }}>
+            <BigTimer triggered={triggered} />
+
+            <div style={{ maxWidth: 320, paddingBottom: "0.6em" }}>
               <p style={{
                 fontFamily: "var(--font-sans)", fontSize: 16,
-                color: "var(--fg-muted)", lineHeight: 1.7, marginBottom: 0,
+                color: "var(--fg-muted)", lineHeight: 1.7,
+                marginBottom: 24,
               }}>
                 Transpilation is never your bottleneck.
                 By the time your editor blinks, tsuki is already done.
               </p>
-              <Chips />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  { value: "~20 MB", label: "disk footprint" },
+                  { value: "<12 MB", label: "peak RAM"       },
+                  { value: "~1 s",   label: "full compile"   },
+                  { value: "0",      label: "daemons"        },
+                ].map(c => (
+                  <div key={c.label} style={{
+                    padding: "8px 14px",
+                    background: "var(--surface-1)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6,
+                    display: "flex", flexDirection: "column", gap: 3,
+                  }}>
+                    <span style={{
+                      fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 600,
+                      letterSpacing: "-0.03em", color: "var(--fg)", lineHeight: 1,
+                    }}>{c.value}</span>
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.07em",
+                      textTransform: "uppercase", color: "var(--fg-faint)",
+                    }}>{c.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Bottom: race + qualitative ─────────────────────────────── */}
-      <div style={{ padding: "64px 0 100px" }}>
+      {/* ── Stats row ─────────────────────────────────────────────── */}
+      <div style={{ padding: "48px 0 0" }}>
         <div className="container">
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 72, alignItems: "start",
-          }}>
-            <RaceSection />
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <StatCard
+              label="Transpile time"
+              animated
+              animTarget={11}
+              animSuffix="ms"
+              animDecimals={0}
+              sub="Go → C++ for a 400-line project"
+              accent
+            />
+            <StatCard label="Compile time"  value="~1"  unit="s"  sub="avr-gcc full build, Arduino Uno" />
+            <StatCard label="Disk footprint" value="~20" unit="MB" sub="Entire tsuki installation on disk" />
+            <StatCard label="RAM at build"   value="<12" unit="MB" sub="Peak process memory during transpile" />
+          </div>
+        </div>
+      </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {POINTS.map(item => (
-                <div key={item.n} style={{
-                  display: "grid", gridTemplateColumns: "28px 1fr",
-                  gap: "0 16px", padding: "18px 0",
-                  borderBottom: "1px solid var(--border-subtle)",
-                }}>
-                  <span style={{
-                    fontFamily: "var(--font-mono)", fontSize: 10,
-                    color: "var(--fg-faint)", paddingTop: 2,
-                  }}>{item.n}</span>
-                  <div>
-                    <div style={{
-                      fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 500,
-                      color: "var(--fg)", letterSpacing: "-0.01em", marginBottom: 5,
-                    }}>{item.title}</div>
-                    <div style={{
-                      fontFamily: "var(--font-sans)", fontSize: 13,
-                      color: "var(--fg-muted)", lineHeight: 1.6,
-                    }}>{item.body}</div>
+      {/* ── Bottom row: terminal + memory comparison ───────────────── */}
+      <div style={{ padding: "12px 0 100px" }}>
+        <div className="container">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
+
+            <Terminal />
+
+            <div style={{
+              background: "var(--surface-1)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 0,
+            }}>
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
+                textTransform: "uppercase", color: "var(--fg-faint)", marginBottom: 20,
+                display: "block",
+              }}>
+                RAM during build — comparison
+              </span>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 28 }}>
+                <MemBar label="tsuki"        pct={8}   value="<12 MB" highlight />
+                <MemBar label="PlatformIO"   pct={38}  value="~180 MB" />
+                <MemBar label="Arduino IDE"  pct={55}  value="~260 MB" />
+                <MemBar label="VS Code ext." pct={100} value="~470 MB" />
+              </div>
+
+              <div style={{
+                borderTop: "1px solid var(--border-subtle)",
+                paddingTop: 20,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}>
+                {[
+                  { icon: "↓", label: "No background daemon — tsuki exits when done" },
+                  { icon: "↓", label: "Zero telemetry, zero network calls at build time" },
+                  { icon: "↓", label: "Single static binary, no runtime dependencies" },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: 11,
+                      color: "var(--ok)", flexShrink: 0, marginTop: 1,
+                    }}>
+                      {item.icon}
+                    </span>
+                    <span style={{
+                      fontFamily: "var(--font-sans)", fontSize: 12,
+                      color: "var(--fg-muted)", lineHeight: 1.5,
+                    }}>
+                      {item.label}
+                    </span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>

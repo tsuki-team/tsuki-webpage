@@ -1,40 +1,38 @@
 "use client";
 
-// No external image requests — colored inline icons only.
-// Eliminates all CDN-loading jank during CSS animation.
 const LANGS_ROW_1 = [
-  { name: "Go",         color: "#6ba4e0", abbr: "Go"  },
-  { name: "Rust",       color: "#e07050", abbr: "Rs"  },
-  { name: "C++",        color: "#659bd6", abbr: "C++" },
-  { name: "Python",     color: "#4b8bbe", abbr: "Py"  },
-  { name: "JavaScript", color: "#f0d060", abbr: "JS"  },
-  { name: "TypeScript", color: "#4db8ff", abbr: "TS"  },
-  { name: "Java",       color: "#e89050", abbr: "Jv"  },
-  { name: "Kotlin",     color: "#9d74f5", abbr: "Kt"  },
-  { name: "Swift",      color: "#f06048", abbr: "Sw"  },
-  { name: "Zig",        color: "#f0a030", abbr: "Zig" },
+  { name: "Go",         color: "#6ba4e0", slug: "go"         },
+  { name: "Rust",       color: "#f74c00", slug: "rust"       },
+  { name: "C++",        color: "#00599c", slug: "cplusplus"  },
+  { name: "Python",     color: "#3572a5", slug: "python"     },
+  { name: "JavaScript", color: "#f7df1e", slug: "javascript" },
+  { name: "TypeScript", color: "#4db8ff", slug: "typescript" },
+  { name: "Java",       color: "#e76f00", slug: "java"       },
+  { name: "Kotlin",     color: "#7f52ff", slug: "kotlin"     },
+  { name: "Swift",      color: "#f05138", slug: "swift"      },
+  { name: "Zig",        color: "#f7a41d", slug: "zig"        },
 ];
 
 const LANGS_ROW_2 = [
-  { name: "C",          color: "#a8b9cc", abbr: "C"   },
-  { name: "Dart",       color: "#40c4b0", abbr: "Dt"  },
-  { name: "Ruby",       color: "#c04040", abbr: "Rb"  },
-  { name: "Haskell",    color: "#8878b8", abbr: "Hs"  },
-  { name: "Lua",        color: "#7080c0", abbr: "Lua" },
-  { name: "Elixir",     color: "#a060c0", abbr: "Ex"  },
-  { name: "C#",         color: "#60b060", abbr: "C#"  },
-  { name: "Nim",        color: "#d0c050", abbr: "Nm"  },
-  { name: "Arduino",    color: "#00a0a8", abbr: "Ard" },
-  { name: "Clojure",    color: "#6080d8", abbr: "Clj" },
+  { name: "C",          color: "#a8b9cc", slug: "c"          },
+  { name: "Dart",       color: "#00b4ab", slug: "dart"       },
+  { name: "Ruby",       color: "#cc342d", slug: "ruby"       },
+  { name: "Haskell",    color: "#5d4f85", slug: "haskell"    },
+  { name: "Lua",        color: "#000080", slug: "lua"        },
+  { name: "Elixir",     color: "#6e4a7e", slug: "elixir"     },
+  { name: "C#",         color: "#239120", slug: "csharp"     },
+  { name: "Nim",        color: "#ffe953", slug: "nim"        },
+  { name: "Arduino",    color: "#00979d", slug: "arduino"    },
+  { name: "Clojure",    color: "#5881d8", slug: "clojure"    },
 ];
 
-function LangCard({ name, color, abbr }: { name: string; color: string; abbr: string }) {
+function LangCard({ name, color, slug }: { name: string; color: string; slug: string }) {
   return (
     <div
       style={{
         flexShrink: 0,
         width: 108,
-        height: 90,
+        height: 94,
         background: "var(--surface-1)",
         border: "1px solid var(--border)",
         borderRadius: 8,
@@ -45,36 +43,30 @@ function LangCard({ name, color, abbr }: { name: string; color: string; abbr: st
         gap: 10,
         cursor: "default",
         userSelect: "none",
-        // contain: layout+style prevents card internals from affecting scroll layer
-        contain: "layout style",
-        transition: "border-color 0.15s",
+        transition: "border-color 0.2s, background 0.2s",
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.borderColor = color + "55";
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = color + "55";
+        el.style.background = "var(--surface-2)";
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = "var(--border)";
+        el.style.background = "var(--surface-1)";
       }}
     >
-      {/* Language monogram — no external requests, no layout shifts */}
-      <div style={{
-        width: 36, height: 36,
-        borderRadius: 6,
-        background: color + "18",
-        border: `1px solid ${color}30`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: abbr.length > 2 ? 9 : 11,
-          fontWeight: 600,
-          color: color,
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-        }}>
-          {abbr}
-        </span>
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://cdn.simpleicons.org/${slug}/${color.replace("#", "")}`}
+        alt={name}
+        width={28}
+        height={28}
+        style={{ display: "block", opacity: 0.88 }}
+        onError={e => {
+          (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+      />
       <span style={{
         fontFamily: "var(--font-mono)",
         fontSize: 9.5,
@@ -97,43 +89,43 @@ function CarouselRow({
   direction: "left" | "right";
   duration?: number;
 }) {
-  // Exactly 2 copies → animate translateX(0 → -50%) = always one perfect loop
   const items = [...langs, ...langs];
   const animName = direction === "left" ? "marquee-left" : "marquee-right";
 
   return (
     <div style={{
-      overflow: "hidden",
-      width: "100%",
-      position: "relative",
-      // Promote to own compositing layer up-front, before animation starts
-      willChange: "transform",
+      overflow: "hidden", width: "100%", position: "relative",
+      // Promote the clip container to its own GPU layer FIRST.
+      // When the animated child is later promoted, they share the same layer
+      // context — preventing the clip/animation desync that makes the
+      // carousel vanish at certain scroll positions.
+      transform: "translateZ(0)",
     }}>
-      {/* Edge fades */}
       <div style={{
-        position: "absolute", left: 0, top: 0, bottom: 0, width: 100,
-        zIndex: 2, pointerEvents: "none",
-        background: "linear-gradient(to right, var(--surface) 30%, transparent)",
+        position: "absolute", left: 0, top: 0, bottom: 0, width: 120, zIndex: 2,
+        pointerEvents: "none",
+        background: "linear-gradient(to right, var(--surface) 20%, transparent)",
       }} />
       <div style={{
-        position: "absolute", right: 0, top: 0, bottom: 0, width: 100,
-        zIndex: 2, pointerEvents: "none",
-        background: "linear-gradient(to left, var(--surface) 30%, transparent)",
+        position: "absolute", right: 0, top: 0, bottom: 0, width: 120, zIndex: 2,
+        pointerEvents: "none",
+        background: "linear-gradient(to left, var(--surface) 20%, transparent)",
       }} />
 
-      {/* The track — promoted to GPU layer via transform3d */}
       <div
         style={{
           display: "flex",
           gap: 10,
           width: "max-content",
-          // translateZ(0) promotes to compositing layer immediately
-          transform: "translateZ(0)",
           animation: `${animName} ${duration}s linear infinite`,
+          // backfaceVisibility: hidden forces compositing without triggering
+          // the double-promotion conflict that breaks overflow clipping.
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
         }}
       >
         {items.map((lang, i) => (
-          <LangCard key={`${lang.abbr}-${i}`} {...lang} />
+          <LangCard key={`${lang.slug}-${i}`} {...lang} />
         ))}
       </div>
     </div>
@@ -162,8 +154,8 @@ export default function Languages() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <CarouselRow langs={LANGS_ROW_1} direction="left"  duration={36} />
-        <CarouselRow langs={LANGS_ROW_2} direction="right" duration={30} />
+        <CarouselRow langs={LANGS_ROW_1} direction="left"  duration={34} />
+        <CarouselRow langs={LANGS_ROW_2} direction="right" duration={28} />
       </div>
     </section>
   );

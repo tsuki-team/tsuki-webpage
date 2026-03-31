@@ -2,6 +2,70 @@
 import { useState, useEffect, useRef } from "react";
 
 const WORDS = ["Go", "Rust", "C++", "C", "Python", "Java", "Javascript"];
+/* ─── Scramble word effect ──────────────────────────────────────────────── */
+const SCRAMBLE_CHARS = "<>{}[]/|*&#$~?!@%^_=+";
+
+function ScrambleWord({ word }: { word: string }) {
+  const [chars, setChars] = useState<{ char: string; locked: boolean }[]>(
+    () => word.split("").map(c => ({ char: c, locked: true }))
+  );
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    cancelAnimationFrame(rafRef.current);
+    const target = word.split("");
+    const TOTAL_MS  = 520;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed    = now - startTime;
+      const lockedCount = Math.min(
+        target.length,
+        Math.floor((elapsed / TOTAL_MS) * target.length)
+      );
+
+      setChars(target.map((ch, i) => ({
+        char: i < lockedCount
+          ? ch
+          : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)],
+        locked: i < lockedCount,
+      })));
+
+      if (lockedCount < target.length) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        // ensure final state is perfectly clean
+        setChars(target.map(ch => ({ char: ch, locked: true })));
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [word]);
+
+  return (
+    <span style={{ display: "inline-block" }}>
+      {chars.map((c, i) => (
+        <span
+          key={i}
+          style={{
+            display: "inline-block",
+            color: c.locked ? "var(--fg)" : "var(--fg-faint)",
+            fontFamily: c.locked ? "inherit" : "var(--font-mono)",
+            // slight scale down on scramble chars so they feel like "noise"
+            fontSize: c.locked ? "1em" : "0.88em",
+            verticalAlign: "baseline",
+            transition: c.locked ? "color 0.06s ease, font-size 0.06s ease" : "none",
+          }}
+        >
+          {c.char}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+
 
 type OS = "unix" | "windows";
 
@@ -30,8 +94,6 @@ function Planet() {
 
     let raf: number;
     let angle = 0;
-    let lastFrame = 0;
-    const FPS_CAP = 1000 / 24; // ~24fps — planet barely moves, no need for 60fps
 
     const setup = () => {
       const w = canvas.parentElement?.offsetWidth  ?? 600;
@@ -48,8 +110,8 @@ function Planet() {
     setup();
     window.addEventListener("resize", setup);
 
-    const LAT = 14;
-    const LON = 18;
+    const LAT = 20;
+    const LON = 28;
     const TILT = 0.28; // radians
 
     function project(px: number, py: number, pz: number, rot: number) {
@@ -64,10 +126,7 @@ function Planet() {
       return { x: rx, y: ry2, z: rz2 };
     }
 
-    function draw(ts: number) {
-      raf = requestAnimationFrame(draw);
-      if (ts - lastFrame < FPS_CAP) return; // skip frame
-      lastFrame = ts;
+    function draw() {
       const s  = sizeRef.current;
       const cx = s / 2, cy = s / 2;
       const R  = s * 0.43;
@@ -184,9 +243,10 @@ function Planet() {
       ctx.fill();
 
       angle += 0.0014;
+      raf = requestAnimationFrame(draw);
     }
 
-    draw(0);
+    draw();
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", setup);
@@ -417,7 +477,6 @@ function BetaModal({ onClose }: { onClose: () => void }) {
 export default function Hero() {
   const [copied,  setCopied]  = useState(false);
   const [wordIdx, setWordIdx] = useState(0);
-  const [fade,    setFade]    = useState(true);
   const [os,      setOs]      = useState<OS>("unix");
   const [showBeta, setShowBeta] = useState(false);
 
@@ -425,8 +484,7 @@ export default function Hero() {
 
   useEffect(() => {
     const iv = setInterval(() => {
-      setFade(false);
-      setTimeout(() => { setWordIdx(i => (i + 1) % WORDS.length); setFade(true); }, 280);
+      setWordIdx(i => (i + 1) % WORDS.length);
     }, 2800);
     return () => clearInterval(iv);
   }, []);
@@ -481,16 +539,14 @@ export default function Hero() {
             animationDelay: "0.1s",
             fontSize: "clamp(42px, 6.5vw, 88px)",
           }}>
-            Building Arduino in{" "}
+            Building Arduino in
+            <br />
             <span style={{
-              color: "var(--fg)",
-              borderBottom: "2px solid var(--fg-faint)",
-              paddingBottom: "0.04em",
               display: "inline-block",
-              transition: "opacity 0.28s ease",
-              opacity: fade ? 1 : 0,
+              borderBottom: "1px solid var(--fg-faint)",
+              paddingBottom: "0.04em",
             }}>
-              {WORDS[wordIdx]}
+              <ScrambleWord word={WORDS[wordIdx]} />
             </span>
           </h1>
 

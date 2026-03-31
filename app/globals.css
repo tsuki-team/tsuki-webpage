@@ -142,23 +142,6 @@ html.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
 html.light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
 
 /* ── Animations ─────────────────────────────────────── */
-
-/* ── Carousel (global — never re-injected from component) ───────────────── */
-@keyframes marquee-left {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@keyframes marquee-right {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
-}
-
-/* ── Performance section ────────────────────────────────────────────────── */
-@keyframes blink-cursor {
-  0%, 100% { opacity: 0.55; }
-  50%       { opacity: 0; }
-}
-
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -247,3 +230,55 @@ html.light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
 /* ── Utilities ──────────────────────────────────────── */
 .no-select { user-select: none; }
 .truncate  { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* ── Carousel (global — never re-injected from component) ───────────────── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Performance section ────────────────────────────────────────────────── */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0; }
+}
+
+/* ── animate-up — hero entry animation ──────────────────────────────────── */
+/* Elements start hidden and slide up on load. fill-mode: both ensures they  */
+/* stay at opacity:1 after the animation completes, preventing the           */
+/* disappear-on-scroll-back bug caused by the browser discarding fill state. */
+.animate-up {
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── reveal / visible — scroll-triggered fade-up system ─────────────────── */
+/* .reveal starts invisible. ScrollReveal.tsx adds .visible via              */
+/* IntersectionObserver. unobserve() is called after, so elements never      */
+/* re-hide when scrolling back up.                                            */
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Install section code box ───────────────────────────────────────────── */
+.cmd-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 7px;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  text-align: left;
+}
+.cmd-box:hover { border-color: rgba(255,255,255,0.14); }

@@ -414,7 +414,7 @@ export default function Countdown({ launchDate, onUnlock }: CountdownProps) {
               fontFamily: "var(--font-mono)", fontSize: 12,
               color: "var(--fg-muted)", letterSpacing: "0.01em",
             }}>
-              
+              curl -X POST https://tsuki.s7lver.xyz/api/unlock
             </code>
           </div>
         </div>

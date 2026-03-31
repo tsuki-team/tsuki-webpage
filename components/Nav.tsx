@@ -54,6 +54,7 @@ export default function Nav() {
           {[
             { label: "Languages",   href: "#languages"   },
             { label: "Performance", href: "#performance" },
+            { label: "Roadmap",     href: "#roadmap"     },
             { label: "Install",     href: "#install"     },
             { label: "GitHub",      href: "https://github.com/s7lver2/tsuki", external: true },
           ].map(l => (
