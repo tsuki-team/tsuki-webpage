@@ -31,7 +31,7 @@ export default function Footer() {
           {[
             { l: "GitHub",   h: "https://github.com/s7lver/tsuki" },
             { l: "Docs",     h: "#" },
-            { l: "Packages", h: "#" },
+            { l: "Packages", h: "/pkg" },
           ].map(x => (
             <a
               key={x.l}

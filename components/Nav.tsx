@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-export default function Nav() {
+export default function Nav({ activePath }: { activePath?: string }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -55,6 +55,7 @@ export default function Nav() {
             { label: "Languages",   href: "#languages"   },
             { label: "Performance", href: "#performance" },
             { label: "Roadmap",     href: "#roadmap"     },
+            { label: "Packages",    href: "/pkg"         },
             { label: "Install",     href: "#install"     },
             { label: "GitHub",      href: "https://github.com/tsuki-team", external: true },
           ].map(l => (
@@ -65,9 +66,11 @@ export default function Nav() {
               rel={(l as any).external ? "noopener noreferrer" : undefined}
               style={{
                 fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 400,
-                color: "var(--fg-muted)", textDecoration: "none",
+                color: activePath === l.href ? "var(--fg)" : "var(--fg-muted)",
+                textDecoration: "none",
                 padding: "5px 10px", borderRadius: 5,
                 transition: "color 0.15s, background 0.15s",
+                background: activePath === l.href ? "var(--active)" : "transparent",
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement;
@@ -76,8 +79,8 @@ export default function Nav() {
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLElement;
-                el.style.color = "var(--fg-muted)";
-                el.style.background = "transparent";
+                el.style.color = activePath === l.href ? "var(--fg)" : "var(--fg-muted)";
+                el.style.background = activePath === l.href ? "var(--active)" : "transparent";
               }}
             >{l.label}</a>
           ))}
