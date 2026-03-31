@@ -46,7 +46,7 @@ export default function Nav() {
           <span style={{
             fontFamily: "var(--font-mono)", fontSize: 9,
             color: "var(--fg-faint)", marginLeft: 2, letterSpacing: "0.05em",
-          }}>v0.1.0</span>
+          }}>v1.0.0</span>
         </a>
 
         {/* Links */}
@@ -56,7 +56,7 @@ export default function Nav() {
             { label: "Performance", href: "#performance" },
             { label: "Roadmap",     href: "#roadmap"     },
             { label: "Install",     href: "#install"     },
-            { label: "GitHub",      href: "https://github.com/s7lver2/tsuki", external: true },
+            { label: "GitHub",      href: "https://github.com/tsuki-team", external: true },
           ].map(l => (
             <a
               key={l.label}

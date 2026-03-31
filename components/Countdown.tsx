@@ -333,7 +333,7 @@ export default function Countdown({ launchDate, onUnlock }: CountdownProps) {
           tsuki
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-faint)", letterSpacing: "0.06em" }}>
-          v0.1.0
+          v1.0.0
         </span>
       </div>
 
@@ -384,7 +384,7 @@ export default function Countdown({ launchDate, onUnlock }: CountdownProps) {
           lineHeight: 1.55, letterSpacing: "-0.01em",
           maxWidth: 440, marginBottom: 44,
         }}>
-          Write Arduino firmware in Go.<br />
+          Write Arduino firmware in any language<br />
           The complete embedded development toolkit.
         </p>
 
@@ -400,23 +400,8 @@ export default function Countdown({ launchDate, onUnlock }: CountdownProps) {
             fontFamily: "var(--font-mono)", fontSize: 9,
             color: "var(--fg-faint)", letterSpacing: "0.14em", textTransform: "uppercase",
           }}>
-            EARLY ACCESS — RUN IN YOUR TERMINAL
+            Comming Soon
           </span>
-
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 12,
-            background: "var(--surface-2)",
-            border: "1px solid var(--border)",
-            borderRadius: 6, padding: "10px 16px",
-          }}>
-            <span style={{ color: "var(--ok)", fontFamily: "var(--font-mono)", fontSize: 12, opacity: 0.8 }}>$</span>
-            <code style={{
-              fontFamily: "var(--font-mono)", fontSize: 12,
-              color: "var(--fg-muted)", letterSpacing: "0.01em",
-            }}>
-              curl -X POST https://tsuki.s7lver.xyz/api/unlock
-            </code>
-          </div>
         </div>
 
       </div>
@@ -430,7 +415,7 @@ export default function Countdown({ launchDate, onUnlock }: CountdownProps) {
         animation: "fadeIn 600ms 300ms ease both",
         opacity: 0,
       }}>
-        <span>TSUKI SYSTEMS · BUILD 2025.09</span>
+        <span>TSUKI PROJECT · by s7lver</span>
         <span>tsuki.s7lver.xyz</span>
       </div>
 

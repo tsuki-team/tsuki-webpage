@@ -5,7 +5,6 @@ import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import Languages from "@/components/Languages";
 import Performance from "@/components/Performance";
-import InstallSection from "@/components/InstallSection";
 import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -52,8 +51,6 @@ export default function Home() {
         <Languages />
         <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
         <Performance />
-        <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
-        <InstallSection />
         <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
         <Roadmap />
       </main>

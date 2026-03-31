@@ -7,26 +7,25 @@ const STAGES = [
     title: "Initial Release",
     date: "Launch day",
     status: "upcoming" as const,
-    summary: "The first public release of tsuki.",
+    summary: "The Birth of tsuki.",
     details: {
       description: "v1.0 marks the first stable, public release of tsuki. Everything needed to write, transpile, compile and flash Arduino firmware from a language other than C++ — shipped as a single binary.",
       sections: [
         {
           heading: "Transpiler",
           items: [
-            "Go → C++ transpiler core, handling structs, interfaces, goroutine-free concurrency patterns",
-            "Type inference and automatic mapping to Arduino-compatible C++ types",
-            "Import resolution with local and registry packages",
-            "Source maps for readable compiler errors pointing back to your original code",
+            "Go and Python support for transpilation to C++",
+            "Native arduino library support (8 libraries on launch)",
+            "8 compatible boards",
           ],
         },
         {
-          heading: "Toolchain",
+          heading: "IDE",
           items: [
-            "tsuki build — transpile + compile in a single command",
-            "tsuki upload — auto-detect connected board and flash via avrdude or esptool",
-            "tsuki init — scaffold a new project with tsuki_package.json and src/main.go",
-            "tsuki pkg install / remove — Ed25519-verified package registry",
+            "full equiped IDE with code editor, library manager, serial port, etc",
+            "full equiped sandbox with simulation and multiple components",
+            "experimental export screen for export your projects in diferent ways",
+            "lsp system for real time errors in the code",
           ],
         },
         {
@@ -34,7 +33,6 @@ const STAGES = [
           items: [
             "Arduino Uno, Nano, Mega, Leonardo, Micro",
             "ESP32 and ESP8266 families",
-            "STM32 (Blue Pill, Black Pill)",
             "Raspberry Pi Pico (RP2040)",
           ],
         },
@@ -61,27 +59,19 @@ const STAGES = [
         {
           heading: "Bug fixes",
           items: [
-            "Transpiler edge-cases reported by the community after 1.0 launch",
-            "Correct handling of recursive type definitions and self-referential structs",
-            "Fix occasional incorrect line number in source-mapped error messages",
-            "Resolve package lock conflicts when multiple packages share a dependency",
+            "COMMING SOON",
           ],
         },
         {
           heading: "Performance",
           items: [
-            "Incremental builds — only re-transpile files that changed since the last build",
-            "Parallel transpilation for multi-file projects, scaling with available CPU cores",
-            "Reduced peak RAM usage during large project compilation (~30% improvement)",
-            "Faster cold-start on Windows via reduced PE loader overhead",
+            "COMMING SOON",
           ],
         },
         {
-          heading: "Developer experience",
+          heading: "Other",
           items: [
-            "Improved error messages with suggested fixes for common transpiler mistakes",
-            "tsuki check command — type-check without building",
-            "Extended board compatibility list based on community-submitted hardware configs",
+            "COMMING SOON",
           ],
         },
       ],

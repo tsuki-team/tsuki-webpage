@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const WORDS = ["Go", "Rust", "C++", "C", "Python", "Java", "Javascript"];
+const WORDS = ["Go", "Rust", "C++", "C", "Python", "Java", "Javascript", "ruby"];
 /* ─── Scramble word effect ──────────────────────────────────────────────── */
 const SCRAMBLE_CHARS = "<>{}[]/|*&#$~?!@%^_=+";
 
@@ -531,7 +531,7 @@ export default function Hero() {
               background: "var(--ok)", marginRight: 2,
               boxShadow: "0 0 6px var(--ok)",
             }} />
-            DEMO SOON · v0.1.0
+            RELEASE · v1.0.0
           </div>
 
           {/* Headline */}
