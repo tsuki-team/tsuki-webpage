@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const GITHUB_REPO = "s7lver2/tsuki";
+const GITHUB_REPO = "tsuki-team/tsuki";
 
 const script = `
 $ErrorActionPreference = 'Stop'

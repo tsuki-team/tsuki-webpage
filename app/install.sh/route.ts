@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-const GITHUB_REPO = "s7lver/tsuki";
+const GITHUB_REPO = "tsuki-team/tsuki";
 
 const script = `#!/usr/bin/env sh
 # tsuki installer
-# Usage: curl -fsSL https://tsuki.sh/install.sh | sh
+# Usage: curl -fsSL https://tsuki.s7lver.xyz/install.sh | sh
 # ─────────────────────────────────────────────────
 
 set -e

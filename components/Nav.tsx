@@ -56,6 +56,7 @@ export default function Nav({ activePath }: { activePath?: string }) {
             { label: "Performance", href: "#performance" },
             { label: "Roadmap",     href: "#roadmap"     },
             { label: "Packages",    href: "/pkg"         },
+            { label: "Supporters",  href: "/supporters"  },
             { label: "Install",     href: "#install"     },
             { label: "GitHub",      href: "https://github.com/tsuki-team", external: true },
           ].map(l => (
